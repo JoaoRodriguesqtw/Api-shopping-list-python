@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from controllers import itensControllers
 from data.itens import Item 
-from data.itens import Item, ItemAtualizar
+from data.schema import ItemAtualizar
 
 
 router = APIRouter()
