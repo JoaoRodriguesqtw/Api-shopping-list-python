@@ -9,6 +9,6 @@ class Item(BaseModel):
 
 
 lista_itens = [
-    Item(id=1, nome="Arroz", valor=10),
-    Item(id=2, nome="Feijão", valor=10),
+    Item(id=1, nome="Arroz",quantidade=1, valor=10),
+    Item(id=2, nome="Feijão",quantidade=1 ,valor=10),
 ]
