@@ -3,6 +3,7 @@ from routes.itensRoutes import router as itens_router
 from middlewares.log_middleware import registrar_log
 from fastapi.middleware.cors import CORSMiddleware
 
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
