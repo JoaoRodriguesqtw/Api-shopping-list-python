@@ -10,7 +10,7 @@ def visualizar_um(id: int):
     for item in lista_itens:
         if item.id == id:
             return item
-    raise HTTPException(status_code=404, detail="Item não encontrado")
+    raise HTTPException(status_code=409, detail="Item não encontrado")
 
 def criar_item(item):
     ids = []
@@ -21,3 +21,11 @@ def criar_item(item):
     item.id = novo_id
     lista_itens.append(item)
     return item
+
+
+def deletar_item(id: int):
+    for item_d in lista_itens:
+        if item_d.id == id:
+            lista_itens.remove(item_d)
+            return {"mensagem": "Item removido"}
+    raise HTTPException(status_code=404, detail="item nao existe")

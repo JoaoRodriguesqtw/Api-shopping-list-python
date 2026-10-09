@@ -19,4 +19,8 @@ def listar_um(id: int):
 def criar_item(item: Item):
     return itensControllers.criar_item(item)
 
+@router.delete("/{id}")
+def deletar_item(id: int):
+    return itensControllers.deletar_item(id)
+
 
