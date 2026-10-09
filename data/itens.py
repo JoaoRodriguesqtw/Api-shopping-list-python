@@ -5,7 +5,7 @@ class Item(BaseModel):
     id: int | None = None
     nome: str
     quantidade: int = 1
-    valor: int = 1
+    valor: float = 1
 
 
 lista_itens = [

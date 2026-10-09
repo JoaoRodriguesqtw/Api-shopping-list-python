@@ -29,3 +29,19 @@ def deletar_item(id: int):
             lista_itens.remove(item_d)
             return {"mensagem": "Item removido"}
     raise HTTPException(status_code=404, detail="item nao existe")
+
+def editar_item(id: int, item):
+    for item_existente in lista_itens:
+        if item_existente.id == id:
+            if item.nome is not None:
+                item_existente.nome = item.nome
+            if item.quantidade is not None:
+                item_existente.quantidade = item.quantidade
+            if item.valor is not None:
+                item_existente.valor = item.valor
+            return item_existente
+    raise HTTPException(status_code=404, detail="item nao existe")
+    
+
+
+     

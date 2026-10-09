@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from controllers import itensControllers
 from data.itens import Item 
+from data.itens import Item, ItemAtualizar
 
 
 router = APIRouter()
@@ -22,5 +23,10 @@ def criar_item(item: Item):
 @router.delete("/{id}")
 def deletar_item(id: int):
     return itensControllers.deletar_item(id)
+
+
+@router.patch("/{id}")
+def atualizar_um(id: int, item: ItemAtualizar):
+    return itensControllers.editar_item(id, item)
 
 
