@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista de compras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fundo: #eef2f6;
+    --papel: #ffffff;
+    --tinta: #14213d;
+    --suave: #5b6779;
+    --linha: #d5dce6;
+    --destaque: #1f4fd8;
+    --destaque-texto: #ffffff;
+    --perigo: #b42318;
+    --aviso-fundo: #fde8e6;
+    --sombra: 0 1px 2px rgba(20, 33, 61, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #0f1626;
+      --papel: #182138;
+      --tinta: #eaf0fb;
+      --suave: #9aa8c0;
+      --linha: #2b3753;
+      --destaque: #6c93ff;
+      --destaque-texto: #0f1626;
+      --perigo: #ff8a80;
+      --aviso-fundo: #3a1d1d;
+      --sombra: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 40px 20px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .subtitulo { margin: 0 0 28px; color: var(--suave); }
+
+  #aviso {
+    background: var(--aviso-fundo);
+    color: var(--perigo);
+    border-left: 4px solid var(--perigo);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+
+  form {
+    display: grid;
+    grid-template-columns: 1fr 90px 120px auto;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  label { display: grid; gap: 4px; font-size: .875rem; color: var(--suave); }
+  input {
+    font: inherit;
+    color: var(--tinta);
+    background: var(--papel);
+    border: 1px solid var(--linha);
+    border-radius: 8px;
+    padding: 9px 10px;
+    min-width: 0;
+    width: 100%;
+  }
+  button {
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--linha);
+    background: var(--papel);
+    color: var(--tinta);
+    padding: 9px 14px;
+  }
+  button.principal {
+    background: var(--destaque);
+    color: var(--destaque-texto);
+    border-color: var(--destaque);
+    align-self: end;
+  }
+  button.perigo { color: var(--perigo); }
+  button:hover { filter: brightness(0.96); }
+  :focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li {
+    display: grid;
+    grid-template-columns: 1fr 90px 120px auto;
+    gap: 10px;
+    align-items: center;
+    background: var(--papel);
+    border: 1px solid var(--linha);
+    box-shadow: var(--sombra);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .nome { font-weight: 500; overflow-wrap: anywhere; }
+  .numero { color: var(--suave); font-variant-numeric: tabular-nums; }
+  .acoes { display: flex; gap: 6px; justify-content: flex-end; }
+  .acoes button { padding: 6px 10px; font-size: .875rem; }
+
+  .vazio { color: var(--suave); padding: 24px 0; }
+  .rodape {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--linha);
+    font-weight: 500;
+  }
+
+  @media (max-width: 560px) {
+    form, li { grid-template-columns: 1fr 1fr; }
+    form label:first-child, li .nome { grid-column: 1 / -1; }
+    .acoes { grid-column: 1 / -1; justify-content: flex-start; }
+    button.principal { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lista de compras</h1>
+  <p class="subtitulo">Itens guardados na sua API FastAPI.</p>
+
+  <div id="aviso" role="alert" hidden></div>
+
+  <form id="formulario">
+    <label>Nome
+      <input id="campo-nome" required maxlength="60" placeholder="Ex.: Arroz">
+    </label>
+    <label>Quantidade
+      <input id="campo-quantidade" type="number" min="1" step="1" value="1" required>
+    </label>
+    <label>Valor (R$)
+      <input id="campo-valor" type="number" min="0" step="0.01" required placeholder="0,00">
+    </label>
+    <button class="principal" type="submit">Adicionar item</button>
+  </form>
+
+  <ul id="lista"></ul>
+
+  <div class="rodape">
+    <span>Total (valor × quantidade)</span>
+    <span id="total">R$ 0,00</span>
+  </div>
+</main>
+
+<script>
+  // Endereço da API (o prefixo /shopping vem do main.py)
+  const API = "/shopping";
+
+  const lista = document.getElementById("lista");
+  const aviso = document.getElementById("aviso");
+  const formulario = document.getElementById("formulario");
+  const totalEl = document.getElementById("total");
+
+  let itens = [];
+  let idEmEdicao = null;
+
+  const moeda = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  function mostrarAviso(texto) {
+    aviso.textContent = texto;
+    aviso.hidden = !texto;
+  }
+
+  // Cria um elemento sem usar innerHTML (evita injetar HTML vindo da API)
+  function criar(tag, atributos = {}, ...filhos) {
+    const elemento = document.createElement(tag);
+    Object.assign(elemento, atributos);
+    elemento.append(...filhos);
+    return elemento;
+  }
+
+  // Faz a chamada e traduz os erros da API em mensagens legíveis
+  async function chamarApi(caminho = "", opcoes = {}) {
+    let resposta;
+    try {
+      resposta = await fetch(API + caminho, opcoes);
+    } catch {
+      throw new Error("Não foi possível conectar à API. Ela está rodando em localhost:8000?");
+    }
+    const dados = await resposta.json().catch(() => null);
+    if (!resposta.ok) {
+      if (dados && typeof dados.detail === "string") throw new Error(dados.detail);
+      if (dados && Array.isArray(dados.detail)) throw new Error("Dados inválidos. Confira os campos.");
+      throw new Error("Erro " + resposta.status);
+    }
+    return dados;
+  }
+
+  const enviarJson = (metodo, corpo) => ({
+    method: metodo,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+
+  async function carregar() {
+    try {
+      itens = await chamarApi("/");
+      mostrarAviso("");
+    } catch (erro) {
+      mostrarAviso(erro.message);
+    }
+    desenhar();
+  }
+
+  async function adicionar(evento) {
+    evento.preventDefault();
+    const novo = {
+      nome: document.getElementById("campo-nome").value.trim(),
+      quantidade: Number(document.getElementById("campo-quantidade").value),
+      valor: Number(document.getElementById("campo-valor").value),
+    };
+    try {
+      await chamarApi("/", enviarJson("POST", novo));
+      formulario.reset();
+      await carregar();
+    } catch (erro) {
+      mostrarAviso(erro.message);
+    }
+  }
+
+  async function salvar(id, dados) {
+    try {
+      await chamarApi("/" + id, enviarJson("PATCH", dados));
+      idEmEdicao = null;
+      await carregar();
+    } catch (erro) {
+      mostrarAviso(erro.message);
+    }
+  }
+
+  async function apagar(id) {
+    try {
+      await chamarApi("/" + id, { method: "DELETE" });
+      await carregar();
+    } catch (erro) {
+      mostrarAviso(erro.message);
+      await carregar();
+    }
+  }
+
+  function linhaNormal(item) {
+    return criar("li", {},
+      criar("span", { className: "nome", textContent: item.nome }),
+      criar("span", { className: "numero", textContent: item.quantidade + " un." }),
+      criar("span", { className: "numero", textContent: moeda(item.valor) }),
+      criar("div", { className: "acoes" },
+        criar("button", { textContent: "Editar", onclick: () => { idEmEdicao = item.id; desenhar(); } }),
+        criar("button", { className: "perigo", textContent: "Apagar", onclick: () => apagar(item.id) })
+      )
+    );
+  }
+
+  function linhaEdicao(item) {
+    const nome = criar("input", { value: item.nome, required: true, ariaLabel: "Nome" });
+    const quantidade = criar("input", { type: "number", min: 1, step: 1, value: item.quantidade, ariaLabel: "Quantidade" });
+    const valor = criar("input", { type: "number", min: 0, step: 0.01, value: item.valor, ariaLabel: "Valor" });
+    return criar("li", {},
+      nome, quantidade, valor,
+      criar("div", { className: "acoes" },
+        criar("button", {
+          className: "principal",
+          textContent: "Salvar",
+          onclick: () => salvar(item.id, {
+            nome: nome.value.trim(),
+            quantidade: Number(quantidade.value),
+            valor: Number(valor.value),
+          }),
+        }),
+        criar("button", { textContent: "Cancelar", onclick: () => { idEmEdicao = null; desenhar(); } })
+      )
+    );
+  }
+
+  function desenhar() {
+    lista.replaceChildren();
+    if (itens.length === 0) {
+      lista.append(criar("li", { className: "vazio", style: "display:block;border:none;background:none;box-shadow:none;padding:24px 0" },
+        "Sua lista está vazia. Adicione o primeiro item acima."));
+    }
+    for (const item of itens) {
+      lista.append(item.id === idEmEdicao ? linhaEdicao(item) : linhaNormal(item));
+    }
+    const total = itens.reduce((soma, item) => soma + item.valor * item.quantidade, 0);
+    totalEl.textContent = moeda(total);
+  }
+
+  formulario.addEventListener("submit", adicionar);
+  carregar();
+</script>
+</body>
+</html>
